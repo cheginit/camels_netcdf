@@ -26,9 +26,6 @@ r = requests.get("https://media.githubusercontent.com/media/cheginit/camels_netc
 qobs = xr.open_dataset(io.BytesIO(r.content), engine="h5netcdf")
 ```
 
-Note that you need to install `h5netcdf` library in addition to
-`geopandas`, `xarray`, and `requests`.
-
 ## Methodology
 
 This repo contains the code that I used to generate the datasets.
