@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-"""Convert CAMELS data to Zarr format."""
+"""Convert CAMELS data to netcdf/feather format."""
+from typing import Tuple
 import pandas as pd
 from pathlib import Path
 import xarray as xr
@@ -20,7 +21,7 @@ def read_basin() -> gpd.GeoDataFrame:
     basin["hru_id"] = basin.hru_id.astype(str).str.zfill(8)
     return basin.set_index("hru_id").geometry
 
-def read_attributes() -> pd.DataFrame:
+def read_attributes() -> Tuple[pd.DataFrame, pd.Index]:
     """Convert all the attributes to a single dataframe."""
     print("Reading basin attributes ...")
     attr_files = Path(ATTR_DIR).glob("camels_*.txt")
@@ -34,11 +35,12 @@ def read_attributes() -> pd.DataFrame:
         return " ".join((name[0], name[1].upper() if len(name[1]) == 2 else name[1].title()))
 
     attrs_df["gauge_name"] = [fix_station_nm(n) for n in attrs_df["gauge_name"]]
-    for c in attrs_df.columns[attrs_df.dtypes == "object"]:
-        attrs_df[c] = attrs_df[c].str.strip()
+    obj_cols = attrs_df.columns[attrs_df.dtypes == "object"]
+    for c in obj_cols:
+        attrs_df[c] = attrs_df[c].str.strip().astype(str)
     
     basin = read_basin()
-    return gpd.GeoDataFrame(attrs_df, geometry=basin, crs="epsg:4326")
+    return gpd.GeoDataFrame(attrs_df, geometry=basin, crs="epsg:4326"), obj_cols
 
 def read_qobs(qobs_txt: Path) -> pd.DataFrame:
     """Read the streamflow data."""
@@ -49,7 +51,7 @@ def read_qobs(qobs_txt: Path) -> pd.DataFrame:
     qobs = qobs.set_index("time")
     return qobs
 
-attrs = read_attributes()
+attrs, obj_cols = read_attributes()
 attrs.to_feather("camels_attributes_v2.0.feather")
 
 print("Reading basin streamflow data ...")
@@ -68,5 +70,7 @@ ds = xr.Dataset(
     },
 )
 ds["discharge"].attrs["units"] = "cfs"
+for v in obj_cols:
+    ds[v] = ds[v].astype(str)
 
-ds.to_zarr(Path("camels_attrs_v2_streamflow_v1p2.zarr"), mode="w", consolidated=True)
+ds.to_netcdf("camels_attrs_v2_streamflow_v1p2.nc")

@@ -1,10 +1,10 @@
-# CAMELS dataset in Zarr/Feather formats
+# CAMELS dataset in NetCDF/Feather formats
 
 ## Motivation
 
 The CAMELS datasets are now provided in an ideal format and takes
 a bit of data processing to convert them to useful and convenient
-dataframes. So, I decided to use the beloved `zarr` and `feather`
+dataframes. So, I decided to use the beloved `netcdf` and `feather`
 formats to make the dataset more accessible!
 
 ## Methodology
@@ -16,11 +16,11 @@ Two data sources are available from the CAMELS dataset:
   [CAMELS](https://ral.ucar.edu/solutions/products/camels) dataset.
 - All the watershed attributes (`camels_attributes_v2.0`).
 
-The `camel_zarr.py` generate two files:
+The `camel_netcdf.py` generate two files:
 
 - `camels_attributes_v2.0.feather`: Includes basin geometries and 60
   basin-level attributes that are available in CAMELS.
-- `camels_attrs_v2_streamflow_v1p2.zarr`: A `xarray.Dataset`
+- `camels_attrs_v2_streamflow_v1p2.nc`: A `xarray.Dataset`
   that includes streamflow observations for all 671 stations, as well
   as the 60 basin-level attributes.
 
@@ -31,15 +31,15 @@ Additionally, the script takes care of some small annoyances in the dataset:
   and there is comma before the states.
 - Station IDs and HUC 02 are strings with leading zero if needed.
 
-Although, the generated `zarr` and `feather` files are available in this repo,
+Although, the generated `netcdf` and `feather` files are available in this repo,
 you can recreate them locally using
 [`mambaforge`](https://github.com/conda-forge/miniforge/) (or `conda`) like so:
 
 ```bash
 mamba env create -f environment.yml
 conda activate camels
-chmod +x ./camels_zarr.py
-./camels_zarr.py
+chmod +x ./camels_netcdf.py
+./camels_netcdf.py
 ```
 
 ## Usage
@@ -47,11 +47,16 @@ chmod +x ./camels_zarr.py
 You can load the files directly like so:
 
 ```python
-import xarray as xr
-import geopandas as gpd
+import io
 
-attrs = gpd.read_feather("https://raw.githubusercontent.com/cheginit/camels_zarr/main/camels_attributes_v2.0.feather")
-qobs = xr.open_zarr("https://raw.githubusercontent.com/cheginit/camels_zarr/main/camels_attrs_v2_streamflow_v1p2.zarr")
+import geopandas as gpd
+import requests
+import xarray as xr
+
+r = requests.get("https://media.githubusercontent.com/media/cheginit/camels_netcdf/main/camels_attributes_v2.0.feather")
+gpd.read_feather(io.BytesIO(r.content))
+
+qobs = xr.open_dataset("https://raw.githubusercontent.com/cheginit/camels_netcdf/main/camels_attrs_v2_streamflow_v1p2.nc")
 ```
 
 ## Example Plots
@@ -59,7 +64,7 @@ qobs = xr.open_zarr("https://raw.githubusercontent.com/cheginit/camels_zarr/main
 Snow fraction using `camels_attributes_v2.0.feather`:
 ![camels_snow_fraction](plots/camels_snow_fraction.png)
 
-The dataset `camels_attrs_v2_streamflow_v1p2.zarr`:
+The dataset `camels_attrs_v2_streamflow_v1p2.nc`:
 ![dataset](plots/dataset.png)
 
 Streamflow observations for USGS-01013500:
