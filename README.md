@@ -7,6 +7,28 @@ a bit of data processing to convert them to useful and convenient
 dataframes. So, I decided to use the beloved `netcdf` and `feather`
 formats to make the dataset more accessible!
 
+## Usage
+
+First make sure that `h5netcdf`, `geopandas`, `xarray`, and `requests`
+Python packages are installed, then load the files directly like so:
+
+```python
+import io
+
+import geopandas as gpd
+import requests
+import xarray as xr
+
+r = requests.get("https://media.githubusercontent.com/media/cheginit/camels_netcdf/main/camels_attributes_v2.0.feather")
+attrs = gpd.read_feather(io.BytesIO(r.content))
+
+r = requests.get("https://media.githubusercontent.com/media/cheginit/camels_netcdf/main/camels_attrs_v2_streamflow_v1p2.nc")
+qobs = xr.open_dataset(io.BytesIO(r.content), engine="h5netcdf")
+```
+
+Note that you need to install `h5netcdf` library in addition to
+`geopandas`, `xarray`, and `requests`.
+
 ## Methodology
 
 This repo contains the code that I used to generate the datasets.
@@ -40,23 +62,6 @@ mamba env create -f environment.yml
 conda activate camels
 chmod +x ./camels_netcdf.py
 ./camels_netcdf.py
-```
-
-## Usage
-
-You can load the files directly like so:
-
-```python
-import io
-
-import geopandas as gpd
-import requests
-import xarray as xr
-
-r = requests.get("https://media.githubusercontent.com/media/cheginit/camels_netcdf/main/camels_attributes_v2.0.feather")
-gpd.read_feather(io.BytesIO(r.content))
-
-qobs = xr.open_dataset("https://raw.githubusercontent.com/cheginit/camels_netcdf/main/camels_attrs_v2_streamflow_v1p2.nc")
 ```
 
 ## Example Plots
