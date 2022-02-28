@@ -1,0 +1,7 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "station_id"
+    ],
+    "units": "cfs"
+}

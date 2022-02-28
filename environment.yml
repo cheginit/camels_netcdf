@@ -1,0 +1,30 @@
+name: camels
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python>=3.9
+
+  - cytoolz
+  - dask-core
+  - geopandas>=0.8
+  - h5netcdf
+  - netcdf4
+  - pandas>=1.0
+  - pyarrow
+  - pygeos
+  - pyproj>=1.2
+  - rioxarray
+  - shapely
+  - xarray>=0.17
+  - zarr
+
+  # optional deps to speed up xarray
+  - bottleneck
+
+  # plotting and dev deps
+  - matplotlib-base>=3.0
+  - proplot
+  - ipykernel
+  - jupyterlab_widgets
+  - ipywidgets
