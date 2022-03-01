@@ -2,7 +2,7 @@
 
 ## Motivation
 
-The CAMELS datasets are now provided in an ideal format and takes
+The CAMELS datasets are not provided in an ideal format and takes
 a bit of data processing to convert them to useful and convenient
 dataframes. So, I decided to use the beloved `netcdf` and `feather`
 formats to make the dataset more accessible!
