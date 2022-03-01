@@ -2,10 +2,12 @@
 
 ## Motivation
 
-The CAMELS datasets are now provided in an ideal format and takes
+The [CAMELS](https://ral.ucar.edu/solutions/products/camels) datasets
+are not provided in an ideal format and takes
 a bit of data processing to convert them to useful and convenient
-dataframes. So, I decided to use the beloved `netcdf` and `feather`
-formats to make the dataset more accessible!
+form for geospatial analyses. So, I decided to use the beloved `netcdf` and `feather`
+formats to make the dataset more accessible while taking care of some
+small annoyances!
 
 ## Usage
 
@@ -29,32 +31,35 @@ qobs = xr.open_dataset(io.BytesIO(r.content), engine="h5netcdf")
 ## Methodology
 
 This repo contains the code that I used to generate the datasets.
-Two data sources are available from the CAMELS dataset:
+Three data sources are available from the CAMELS dataset:
 
-- Streamflow observations for all 671 stations in the
-  [CAMELS](https://ral.ucar.edu/solutions/products/camels) dataset.
-- All the watershed attributes (`camels_attributes_v2.0`).
+- [Observed Flow](https://ral.ucar.edu/sites/default/files/public/product-tool/camels-catchment-attributes-and-meteorology-for-large-sample-studies-dataset-downloads/basin_timeseries_v1p2_metForcing_obsFlow.zip):
+  Streamflow observations for all 671 stations.
+- [Basin Geometries](https://ral.ucar.edu/sites/default/files/public/product-tool/camels-catchment-attributes-and-meteorology-for-large-sample-studies-dataset-downloads/basin_set_full_res.zip):
+  Polygons representing basins' boundaries for all 671 stations.
+- [Basin Attributes](https://ral.ucar.edu/sites/default/files/public/product-tool/camels-catchment-attributes-and-meteorology-for-large-sample-studies-dataset-downloads/camels_attributes_v2.0.zip): 60 Basin-level attributes for all 671 stations.
 
-The `camel_netcdf.py` generate two files:
+The `camel_netcdf.py` generates two files:
 
 - `camels_attributes_v2.0.feather`: Includes basin geometries and 60
   basin-level attributes that are available in CAMELS.
-- `camels_attrs_v2_streamflow_v1p2.nc`: A `xarray.Dataset`
-  that includes streamflow observations for all 671 stations, as well
-  as the 60 basin-level attributes.
+- `camels_attrs_v2_streamflow_v1p2.nc`: Includes observed flows
+  for all 671 stations, as well as the 60 basin-level attributes. It has
+  two dimensions (`station_id` and `time`) and 60 data variables.
 
-Additionally, the script takes care of some small annoyances in the dataset:
+Additionally, the script takes care of some small annoyances:
 
 - Station names didn't have a consistent format and there were some missing
   commas and extra periods! Now, the names have a consistent format (`title`)
   and there is comma before the states.
-- Station IDs and HUC 02 are strings with leading zero if needed.
+- Station IDs and HUC 02 are strings with leading zeros if needed.
 
-Although, the generated `netcdf` and `feather` files are available in this repo,
-you can recreate them locally using
+You can recreate the generated files locally using
 [`mambaforge`](https://github.com/conda-forge/miniforge/) (or `conda`) like so:
 
 ```bash
+git clone https://github.com/cheginit/camels_netcdf
+cd camels_netcdf
 mamba env create -f environment.yml
 conda activate camels
 chmod +x ./camels_netcdf.py
