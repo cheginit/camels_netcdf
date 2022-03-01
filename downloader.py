@@ -3,10 +3,10 @@
 Taken from examples in https://github.com/Textualize/rich
 """
 
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 import signal
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
+from pathlib import Path
 from threading import Event
 from typing import Iterable
 from urllib.request import urlopen
@@ -22,9 +22,9 @@ from rich.progress import (
 )
 
 progress = Progress(
-    TextColumn("[bold blue]{task.fields[filename]}", justify="right"),
+    TextColumn("[bold blue]{task.fields[filename]}", justify="right"),  # noqa: FS003
     BarColumn(bar_width=None),
-    "[progress.percentage]{task.percentage:>3.1f}%",
+    "[progress.percentage]{task.percentage:>3.1f}%",  # noqa: FS003
     "•",
     DownloadColumn(),
     "•",
@@ -32,12 +32,11 @@ progress = Progress(
     "•",
     TimeRemainingColumn(),
 )
-
-
 done_event = Event()
 
 
 def handle_sigint(signum, frame):
+    """Handle SIGINT (Ctrl+C) signal."""
     done_event.set()
 
 
@@ -61,11 +60,9 @@ def copy_url(task_id: TaskID, url: str, path: str) -> None:
 
 def download(urls: Iterable[str], dest_dir: str):
     """Download multuple files to the given directory."""
-
-    with progress:
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            for url in urls:
-                filename = url.split("/")[-1]
-                dest_path = Path(dest_dir, filename)
-                task_id = progress.add_task("download", filename=filename, start=False)
-                pool.submit(copy_url, task_id, url, dest_path)
+    with progress, ThreadPoolExecutor(max_workers=4) as pool:
+        for url in urls:
+            filename = url.split("/")[-1]
+            dest_path = Path(dest_dir, filename)
+            task_id = progress.add_task("download", filename=filename, start=False)
+            pool.submit(copy_url, task_id, url, dest_path)

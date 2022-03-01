@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 """Convert CAMELS data to netcdf/feather format."""
+import datetime
+import functools
 import warnings
 import zipfile
 from pathlib import Path
-from typing import Tuple
+from timeit import default_timer as timer
+from typing import Any, Callable, Tuple, Type, TypeVar
+from urllib.request import urlopen
 
 import geopandas as gpd
 import pandas as pd
 import xarray as xr
-from urllib.request import urlopen
+from rich.console import Console
+from rich.live import Live
 
 from downloader import download
 
@@ -24,9 +29,48 @@ QOBS_DIR = Path(
 )
 
 
+T = TypeVar("T")
+
+console = Console()
+
+
+def live_display(
+    desc: str,
+    console: Console = console,
+) -> Callable[[Type[T]], Callable[..., Callable[..., T]]]:
+    """Show a message before and after running a function including elapsed time.
+
+    Parameters
+    ----------
+    desc : str
+        Job description.
+    console : Console
+        Console instance for printing the messages.
+    """
+
+    def decorator_live_display(func: Type[T]) -> Callable[..., Callable[..., T]]:
+        @functools.wraps(func)
+        def wrapper_decorator(*args: Any, **kwargs: Any) -> Any:
+            with Live(console=console, screen=False, auto_refresh=False) as live:
+                live.update(f"{desc} ...", refresh=True)
+                start = timer()
+                value = func(*args, **kwargs)
+                end = timer()
+                elapsed = datetime.timedelta(seconds=end - start)
+                live.update(
+                    f"{desc} [:heavy_check_mark:] ({elapsed})",
+                    refresh=True,
+                )
+            return value
+
+        return wrapper_decorator
+
+    return decorator_live_display
+
+
+@live_display("Downloading raw CAMELS files")
 def download_files() -> None:
     """Download the required zip files."""
-    print("Downloading raw CAMELS files ...")
     ROOT.mkdir(exist_ok=True)
     base_url = "/".join(
         [
@@ -39,32 +83,36 @@ def download_files() -> None:
         f"{base_url}/basin_set_full_res.zip",
         f"{base_url}/basin_timeseries_v1p2_metForcing_obsFlow.zip",
     ]
-    to_dl = [url for url in links if not Path(ROOT, url.rsplit("/", 1)[1]).exists()]
-    for url in to_dl:
+    for url in links:
         fzip = Path(ROOT, url.rsplit("/", 1)[1])
         if fzip.exists():
             with urlopen(url) as response:
                 if int(response.info()["Content-length"]) != fzip.stat().st_size:
                     fzip.unlink()
+    to_dl = [url for url in links if not Path(ROOT, url.rsplit("/", 1)[1]).exists()]
     download(to_dl, ROOT)
-    print("Extracting the downloaded files ...")
+
+
+@live_display("Extracting the downloaded files")
+def zip_extract() -> None:
+    """Extract the downloaded zip files."""
     for f in ROOT.glob("*.zip"):
         with zipfile.ZipFile(f) as zf:
             zf.extractall(ROOT)
 
 
+@live_display("Reading basin geometries")
 def read_basin() -> gpd.GeoDataFrame:
     """Read the basin shapefile."""
-    print("Reading basin geometries ...")
     basin = gpd.read_file(Path(ROOT, "HCDN_nhru_final_671.shp"))
     basin = basin.to_crs("epsg:4326")
     basin["hru_id"] = basin.hru_id.astype(str).str.zfill(8)
     return basin.set_index("hru_id").geometry
 
 
-def read_attributes() -> Tuple[pd.DataFrame, pd.Index]:
+@live_display("Reading basin attributes")
+def read_attributes(basin: gpd.GeoDataFrame) -> Tuple[pd.DataFrame, pd.Index]:
     """Convert all the attributes to a single dataframe."""
-    print("Reading basin attributes ...")
     attr_files = Path(ATTR_DIR).glob("camels_*.txt")
     attrs = {
         f.stem.split("_")[1]: pd.read_csv(
@@ -86,7 +134,6 @@ def read_attributes() -> Tuple[pd.DataFrame, pd.Index]:
     for c in obj_cols:
         attrs_df[c] = attrs_df[c].str.strip().astype(str)
 
-    basin = read_basin()
     return gpd.GeoDataFrame(attrs_df, geometry=basin, crs="epsg:4326"), obj_cols
 
 
@@ -100,9 +147,9 @@ def _read_qobs(qobs_txt: Path) -> pd.DataFrame:
     return qobs
 
 
+@live_display("Reading basin streamflow data")
 def read_qobs(attrs: pd.DataFrame, obj_cols: pd.Index) -> xr.Dataset:
     """Read the streamflow data."""
-    print("Reading basin streamflow data ...")
     qobs = pd.concat(
         (
             _read_qobs(Path(QOBS_DIR, huc, f"{sid}_streamflow_qc.txt"))
@@ -128,7 +175,9 @@ def read_qobs(attrs: pd.DataFrame, obj_cols: pd.Index) -> xr.Dataset:
 
 if __name__ == "__main__":
     download_files()
-    attrs, obj_cols = read_attributes()
+    zip_extract()
+    basin = read_basin()
+    attrs, obj_cols = read_attributes(basin)
     attrs.to_feather("camels_attributes_v2.0.feather")
     ds = read_qobs(attrs, obj_cols)
     ds.to_netcdf("camels_attrs_v2_streamflow_v1p2.nc", engine="h5netcdf")
