@@ -5,7 +5,7 @@
 The [CAMELS](https://ral.ucar.edu/solutions/products/camels) datasets
 are not provided in an ideal format and takes
 a bit of data processing to convert them to useful and convenient
-form for geospatial analyses. So, I decided to use the beloved `netcdf` and `feather`
+forms for geospatial analyses. So, I decided to use the beloved `netcdf` and `feather`
 formats to make the dataset more accessible while taking care of some
 small annoyances!
 
