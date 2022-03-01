@@ -13,6 +13,7 @@ dependencies:
   - pyarrow
   - pygeos
   - pyproj>=1.2
+  - rich
   - rioxarray
   - shapely
   - xarray>=0.17
@@ -21,7 +22,6 @@ dependencies:
   - bottleneck
 
   # plotting and dev deps
-  - matplotlib-base>=3.0
   - proplot
   - ipykernel
   - jupyterlab_widgets
