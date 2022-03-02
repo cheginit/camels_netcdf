@@ -7,7 +7,8 @@ are not provided in an ideal format and takes
 a bit of data processing to convert them to useful and convenient
 forms for geospatial analyses. So, I decided to use the beloved `netcdf` and `feather`
 formats to make the dataset more accessible while taking care of some
-small annoyances!
+small annoyances! The generated files are hosted on
+[Hydroshare](https://www.hydroshare.org/resource/658c359b8c83494aac0f58145b1b04e6/).
 
 ## Usage
 
@@ -21,10 +22,10 @@ import geopandas as gpd
 import requests
 import xarray as xr
 
-r = requests.get("https://media.githubusercontent.com/media/cheginit/camels_netcdf/main/camels_attributes_v2.0.feather")
+r = requests.get("https://www.hydroshare.org/resource/658c359b8c83494aac0f58145b1b04e6/data/contents/camels_attributes_v2.0.feather")
 attrs = gpd.read_feather(io.BytesIO(r.content))
 
-r = requests.get("https://media.githubusercontent.com/media/cheginit/camels_netcdf/main/camels_attrs_v2_streamflow_v1p2.nc")
+r = requests.get("https://www.hydroshare.org/resource/658c359b8c83494aac0f58145b1b04e6/data/contents/camels_attrs_v2_streamflow_v1p2.nc")
 qobs = xr.open_dataset(io.BytesIO(r.content), engine="h5netcdf")
 ```
 
